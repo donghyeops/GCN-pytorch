@@ -9,11 +9,13 @@ class GCNLayer(nn.Module):
         in_features: int,
         out_features: int,
         bias: bool = False,
-        activation=F.relu
+        activation=F.relu,
+        dropout=0.5
     ):
         super().__init__()
         self.fc = nn.Linear(in_features=in_features, out_features=out_features, bias=bias)
         self.activation = activation
+        self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x, A_tilde):
         D_tilde = A_tilde.sum(axis=1) ** -0.5
@@ -24,6 +26,7 @@ class GCNLayer(nn.Module):
         HW = self.fc(x)
         x = torch.matmul(DAD, HW)
         x = self.activation(x)
+        x = self.dropout(x)
         return x
 
 
