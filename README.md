@@ -8,7 +8,7 @@ PyTorch implementation of ["Semi-Supervised Classification with Graph Convolutio
 ### Results
 | ACC(%)          | My | Paper |
 | ------------ | ---- | ---- |
-| **Citeseer** | 68.4% | 70.3% |
+| **Citeseer** | 68.2% | 70.3% |
 | **Cora** |  | 81.5% |
 | **Pubmed** |  | 79.0% |
 | **NELL** |  | 66.0% |
