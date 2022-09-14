@@ -126,12 +126,12 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_dim', type=int, default=16)
     parser.add_argument('--n_layer', type=int, default=2)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--lr', type=float, default=0.1)
+    parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
     parser.add_argument('--label_smoothing', type=float, default=0)
     parser.add_argument('--n_epoch', type=int, default=200)
     parser.add_argument('--lr_decay_step', type=int, default=100)
-    parser.add_argument('--lr_decay_gamma', type=int, default=0.1)
+    parser.add_argument('--lr_decay_gamma', type=int, default=0.5)
     parser.add_argument('--residual', action="store_true", default=False)  # n_layer > 2 only
     parser.add_argument('--embedding', action="store_true", default=False)
 
