@@ -80,7 +80,6 @@ class GCNModel(nn.Module):
             x = x.to(A_tilde.device)
             x = self.embedding(x)
         A_hat = get_gcn_a_hat(A_tilde)
-        x = F.normalize(x, dim=1)
         for gcn_layer in self.gcn_layers:
             x = gcn_layer(x, A_hat)
         return x
