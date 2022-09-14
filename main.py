@@ -16,13 +16,30 @@ def count_parameters(model):
 
 
 def run(args):
-    dataset = CiteSeer(n_test_data=args.n_test_data)
+    if args.dataset == 'citeseer':
+        dataset = CiteSeer(
+            n_train_data_per_class=args.n_train_data_per_class,
+            n_test_data=args.n_test_data
+        )
+    else:
+        raise ValueError(f"not found {args.dataset} dataset")
+    print(f"Load Dataset ({args.dataset})")
+    print(f" - node#: {dataset.num_nodes:,}")
+    print(f" - edge#: {dataset.num_edges:,}")
+    print(f" - class#: {dataset.num_classes:,}")
+    print(f" - feat_size: {len(dataset.feats[0]):,}")
+    print(f" - label_rate: {len(dataset.train_nodes) / len(dataset.nodes):,}")
+    print('')
 
     model = GCNModel(
-        n_node=len(dataset),
-        n_feature=args.n_unit,
+        in_dim=args.in_dim,
+        hidden_dim=args.hidden_dim,
         n_layer=args.n_layer,
-        n_class=dataset.num_classes
+        n_class=dataset.num_classes,
+        dropout=args.dropout,
+        residual=args.residual,
+        embedding=args.embedding,
+        n_node=dataset.num_nodes,
     ).cuda()
 
     n_trainable_params = count_parameters(model)
@@ -31,7 +48,7 @@ def run(args):
     loss_func = nn.CrossEntropyLoss(label_smoothing=args.label_smoothing)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=0.1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_decay_step, gamma=args.lr_decay_gamma)
 
     print('Train Model')
     _st = time.time()
@@ -56,11 +73,11 @@ def run(args):
 def train_model(model, dataset, optimizer, loss_func):
     model.train()
 
-    A_tilde, nodes, labels = dataset(split='train')
+    A_tilde, nodes, feats, labels = dataset(split='train')
     A_tilde = A_tilde.float().cuda()
-    nodes = nodes
+    feats = feats.cuda()
     labels = labels.cuda()
-    output = model(A_tilde)[nodes]
+    output = model(A_tilde, feats)[nodes]
     loss = loss_func(output, labels)
 
     model.zero_grad()
@@ -78,13 +95,13 @@ def train_model(model, dataset, optimizer, loss_func):
 def test_model(model, dataset, loss_func):
     model.eval()
 
-    A_tilde, nodes, labels = dataset(split='test')
+    A_tilde, nodes, feats, labels = dataset(split='test')
     A_tilde = A_tilde.float().cuda()
-    nodes = nodes
+    feats = feats.cuda()
     labels = labels.cuda()
 
     with torch.no_grad():
-        output = model(A_tilde)[nodes]
+        output = model(A_tilde, feats)[nodes]
         loss = loss_func(output, labels)
         loss = loss.item()
 
@@ -105,14 +122,21 @@ def set_seed(seed):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_unit', type=int, default=16)
+    parser.add_argument('--in_dim', type=int, default=3703)  # citeseer: 3703
+    parser.add_argument('--hidden_dim', type=int, default=16)
     parser.add_argument('--n_layer', type=int, default=2)
-    parser.add_argument('--weighing_factor', type=int, default=2)
-    parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--dropout', type=float, default=0.5)
+    parser.add_argument('--lr', type=float, default=0.1)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
-    parser.add_argument('--label_smoothing', type=float, default=0.1)
+    parser.add_argument('--label_smoothing', type=float, default=0)
     parser.add_argument('--n_epoch', type=int, default=200)
-    parser.add_argument('--lr_decay_step', type=int, default=200)
+    parser.add_argument('--lr_decay_step', type=int, default=100)
+    parser.add_argument('--lr_decay_gamma', type=int, default=0.1)
+    parser.add_argument('--residual', action="store_true", default=False)  # n_layer > 2 only
+    parser.add_argument('--embedding', action="store_true", default=False)
+
+    parser.add_argument('--dataset', type=str, default='citeseer')
+    parser.add_argument('--n_train_data_per_class', type=int, default=20)
     parser.add_argument('--n_test_data', type=int, default=1000)
     parser.add_argument('--seed', type=int, default=7770)
     args = parser.parse_args()
